@@ -1,0 +1,307 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect, useCallback } from "react"
+import { Upload, Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { AspectRatio } from "@/components/ui/aspect-ratio"
+import Image from "next/image"
+
+interface EbayProduct {
+  id: string
+  title: string
+  price: string
+  image: string
+  url: string
+}
+
+export default function HomePage() {
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [searchResults, setSearchResults] = useState<EbayProduct[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [hasSearched, setHasSearched] = useState(false)
+  const [hasMoreResults, setHasMoreResults] = useState(true)
+  const [page, setPage] = useState(1)
+
+  const handleImageSelect = (file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      setSelectedImage(file)
+      setError(null)
+      setSearchResults([])
+      setHasSearched(false)
+      setPage(1)
+      setHasMoreResults(true)
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handleImageSelect(file)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      handleImageSelect(file)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const loadResults = async (pageNum: number, isInitialSearch = false) => {
+    if (!selectedImage) return
+
+    if (isInitialSearch) {
+      setIsSearching(true)
+      setError(null)
+      setHasSearched(true)
+    } else {
+      setIsLoadingMore(true)
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append("image", selectedImage)
+      formData.append("page", pageNum.toString())
+
+      const response = await fetch("/api/search", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Search failed")
+      }
+
+      const data = await response.json()
+
+      if (isInitialSearch) {
+        setSearchResults(data.products || [])
+      } else {
+        setSearchResults((prev) => [...prev, ...(data.products || [])])
+      }
+
+      setHasMoreResults(data.hasMore !== false)
+    } catch (err) {
+      setError("Search failed. Please try again with another image.")
+      if (isInitialSearch) {
+        setSearchResults([])
+      }
+    } finally {
+      setIsSearching(false)
+      setIsLoadingMore(false)
+    }
+  }
+
+  const handleSearch = () => {
+    setPage(1)
+    loadResults(1, true)
+  }
+
+  const loadMore = useCallback(() => {
+    if (!isLoadingMore && hasMoreResults) {
+      const nextPage = page + 1
+      setPage(nextPage)
+      loadResults(nextPage, false)
+    }
+  }, [page, isLoadingMore, hasMoreResults, selectedImage])
+
+  // Infinite scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >=
+        document.documentElement.offsetHeight - 1000 // Load more when 1000px from bottom
+      ) {
+        loadMore()
+      }
+    }
+
+    if (searchResults.length > 0 && hasMoreResults) {
+      window.addEventListener("scroll", handleScroll)
+      return () => window.removeEventListener("scroll", handleScroll)
+    }
+  }, [loadMore, searchResults.length, hasMoreResults])
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">Visual Product Search</h1>
+          <p className="text-lg text-slate-600">Upload an image to find similar products on eBay</p>
+        </div>
+
+        {/* Upload Section */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <Card>
+            <CardContent className="p-6">
+              {!imagePreview ? (
+                <div
+                  className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-slate-400 transition-colors cursor-pointer"
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onClick={() => document.getElementById("file-input")?.click()}
+                >
+                  <Upload className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Upload Product Image</h3>
+                  <p className="text-slate-600 mb-4">Drag and drop an image here, or click to select</p>
+                  <p className="text-sm text-slate-500">Supports JPG, PNG, and WebP formats</p>
+                  <input id="file-input" type="file" accept="image/*" onChange={handleFileInput} className="hidden" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="relative max-w-md mx-auto">
+                    <AspectRatio ratio={1}>
+                      <Image
+                        src={imagePreview || "/placeholder.svg"}
+                        alt="Selected product"
+                        fill
+                        className="object-cover rounded-lg"
+                      />
+                    </AspectRatio>
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      onClick={handleSearch}
+                      disabled={isSearching}
+                      size="lg"
+                      className="min-w-40 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-sm"
+                      variant="outline"
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        <>
+                          <span className="mr-2 text-lg">🐼</span>
+                          Find similar
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedImage(null)
+                        setImagePreview(null)
+                        setSearchResults([])
+                        setError(null)
+                        setHasSearched(false)
+                        setPage(1)
+                        setHasMoreResults(true)
+                      }}
+                    >
+                      Upload New Image
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Loading State */}
+        {isSearching && (
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 text-slate-600">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Finding most similar products...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="max-w-2xl mx-auto mb-8">
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-6 text-center">
+                <p className="text-red-800">{error}</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Results Section */}
+        {hasSearched && !isSearching && searchResults.length === 0 && !error && (
+          <div className="max-w-2xl mx-auto mb-8">
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardContent className="p-6 text-center">
+                <p className="text-yellow-800">
+                  No similar products found. Try uploading a different image with a clearer view of the product.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {searchResults.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">
+              Similar Products Found ({searchResults.length} results)
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {searchResults.map((product, index) => (
+                <Card key={`${product.id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative">
+                    <AspectRatio ratio={1}>
+                      <Image
+                        src={product.image || "/placeholder.svg"}
+                        alt={product.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </AspectRatio>
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2 text-sm">{product.title}</h3>
+                    <p className="text-lg font-bold text-green-600 mb-3">{product.price}</p>
+                    <Button asChild className="w-full" size="sm">
+                      <a href={product.url} target="_blank" rel="noopener noreferrer">
+                        View on eBay
+                      </a>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Loading more indicator */}
+            {isLoadingMore && (
+              <div className="text-center mt-8">
+                <div className="inline-flex items-center gap-2 text-slate-600">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Loading more products...</span>
+                </div>
+              </div>
+            )}
+
+            {/* End of results indicator */}
+            {!hasMoreResults && searchResults.length > 0 && (
+              <div className="text-center mt-8 py-4">
+                <p className="text-slate-500">You've reached the end of the results</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

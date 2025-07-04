@@ -152,9 +152,17 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Visual Product Search</h1>
-          <p className="text-lg text-slate-600">Upload an image to find similar products on eBay</p>
+        <div className="text-center mb-8 flex flex-col items-center sm:flex-row sm:justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">Visual Product Search</h1>
+            <p className="text-lg text-slate-600">Upload an image to find similar products on eBay</p>
+          </div>
+          <a
+            href="/about"
+            className="mt-4 sm:mt-0 inline-block px-5 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition"
+          >
+            About MoneyBear
+          </a>
         </div>
 
         {/* Upload Section */}

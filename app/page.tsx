@@ -17,6 +17,9 @@ interface EbayProduct {
   url: string
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+
 export default function HomePage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -29,20 +32,26 @@ export default function HomePage() {
   const [page, setPage] = useState(1)
 
   const handleImageSelect = (file: File) => {
-    if (file && file.type.startsWith("image/")) {
-      setSelectedImage(file)
-      setError(null)
-      setSearchResults([])
-      setHasSearched(false)
-      setPage(1)
-      setHasMoreResults(true)
-
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError("Only JPG, PNG, and WebP images are allowed.")
+      return
     }
+    if (file.size > MAX_FILE_SIZE) {
+      setError("Image must be less than 5MB.")
+      return
+    }
+    setSelectedImage(file)
+    setError(null)
+    setSearchResults([])
+    setHasSearched(false)
+    setPage(1)
+    setHasMoreResults(true)
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,6 +311,10 @@ export default function HomePage() {
           </div>
         )}
       </div>
+      {/* Affiliate Disclosure */}
+      <footer className="w-full text-center py-4 text-xs text-slate-500 bg-transparent mt-8">
+        As an eBay Partner, we may be compensated if you make a purchase through links on our site.
+      </footer>
     </div>
   )
 }

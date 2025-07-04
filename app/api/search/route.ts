@@ -156,6 +156,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No image provided" }, { status: 400 })
     }
 
+    // Validate file type and size
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"]
+    if (!allowedTypes.includes(image.type)) {
+      return NextResponse.json({ error: "Invalid file type. Only JPG, PNG, and WebP images are allowed." }, { status: 400 })
+    }
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (image.size > maxSize) {
+      return NextResponse.json({ error: "File too large. Maximum allowed size is 5MB." }, { status: 400 })
+    }
+
     // Simulate processing time
     await new Promise((resolve) => setTimeout(resolve, page === 1 ? 2000 : 1000))
 

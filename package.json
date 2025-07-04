@@ -6,7 +6,10 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "audit": "pnpm audit",
+    "upgrade:minor": "pnpm up --latest --recursive --interactive --filter '!devDependencies'",
+    "upgrade:all": "pnpm up --latest --recursive"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

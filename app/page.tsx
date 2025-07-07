@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import Image from "next/image"
+import AnimatedTitle from '@/components/AnimatedTitle'
 
 interface EbayProduct {
   id: string
@@ -263,20 +264,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8 flex flex-col items-center sm:flex-row sm:justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">Visual Product Search</h1>
-            <p className="text-lg text-slate-600">Upload an image to find similar products on eBay</p>
-          </div>
-          <a
-            href="/about"
-            className="mt-4 sm:mt-0 inline-block px-5 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition"
-          >
-            About MoneyBear
-          </a>
-        </div>
-
+        {/* Hero Section */}
+        <section className="flex flex-col items-center justify-center text-center mb-12">
+          <AnimatedTitle />
+          <p className="mt-4 text-xl text-slate-700 font-medium">Just snap, search, and discover!</p>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-extrabold text-slate-900">Visual Product Search</h2>
+          <p className="mt-2 text-lg text-slate-600 max-w-xl mx-auto">Upload an image to find similar products on eBay</p>
+        </section>
         {/* Upload Section */}
         <div className="max-w-2xl mx-auto mb-8">
           <Card>
@@ -294,7 +288,6 @@ export default function HomePage() {
             </CardContent>
           </Card>
         </div>
-
         {/* Loading State */}
         {isSearching && (
           <div className="text-center mb-8">
@@ -304,7 +297,6 @@ export default function HomePage() {
             </div>
           </div>
         )}
-
         {/* Error State */}
         {error && !isSearching && (
           <div className="max-w-2xl mx-auto mb-8">
@@ -315,7 +307,6 @@ export default function HomePage() {
             </Card>
           </div>
         )}
-
         {/* No Results State */}
         {hasSearched && !isSearching && searchResults.length === 0 && !error && (
           <div className="max-w-2xl mx-auto mb-8">
@@ -328,7 +319,6 @@ export default function HomePage() {
             </Card>
           </div>
         )}
-
         {/* Results Section */}
         {searchResults.length > 0 && (
           <ResultsGrid

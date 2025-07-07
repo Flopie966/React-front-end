@@ -4,7 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Moneybear',
   description: 'Improved visual search of your second-hand items',
-  generator: 'Moneybear',
+  generator: 'Moneybear 2.0',
 }
 
 export default function RootLayout({

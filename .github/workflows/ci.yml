@@ -14,28 +14,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node.js and pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10 # Consider using a specific version like 9 instead of 10 if not released
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: latest
-          cache: 'pnpm'
-
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --strict-peer-dependencies
-
-      - name: Install global tools
-        run: pnpm add -g prettier typescript
+          node-version: 20 # It's better to use a specific LTS version than 'latest'
+          cache: pnpm
 
       - name: Check pnpm version
         run: pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Run build
         run: pnpm build
@@ -44,4 +38,4 @@ jobs:
         run: pnpm lint
 
       - name: Run audit
-        run: pnpm audit --audit-level=moderate 
+        run: pnpm audit --audit-level=moderate

@@ -20,6 +20,140 @@ interface EbayProduct {
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
+// --- Upload Area Component ---
+function UploadArea({ onFileSelect, error }: { onFileSelect: (file: File) => void; error: string | null }) {
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) onFileSelect(file)
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file) onFileSelect(file)
+  }
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault()
+
+  return (
+    <div
+      className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-slate-400 transition-colors cursor-pointer"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onClick={() => document.getElementById("file-input")?.click()}
+      role="button"
+      tabIndex={0}
+      aria-label="Upload product image"
+      onKeyPress={e => { if (e.key === "Enter") document.getElementById("file-input")?.click() }}
+    >
+      <Upload className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden />
+      <h3 className="text-lg font-semibold text-slate-900 mb-2">Upload Product Image</h3>
+      <p className="text-slate-600 mb-4">Drag and drop an image here, or click to select</p>
+      <p className="text-sm text-slate-500">Supports JPG, PNG, and WebP formats</p>
+      <input id="file-input" type="file" accept="image/*" onChange={handleFileInput} className="hidden" aria-label="File input" />
+      {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
+    </div>
+  )
+}
+
+// --- Image Preview Component ---
+function ImagePreview({ imagePreview, onSearch, onReset, isSearching }: {
+  imagePreview: string
+  onSearch: () => void
+  onReset: () => void
+  isSearching: boolean
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="relative max-w-md mx-auto">
+        <AspectRatio ratio={1}>
+          <Image
+            src={imagePreview || "/placeholder.svg"}
+            alt="Selected product"
+            fill
+            className="object-cover rounded-lg"
+          />
+        </AspectRatio>
+      </div>
+      <div className="flex gap-2 justify-center">
+        <Button
+          onClick={onSearch}
+          disabled={isSearching}
+          size="lg"
+          className="min-w-40 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-sm"
+          variant="outline"
+        >
+          {isSearching ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Searching...
+            </>
+          ) : (
+            <>
+              <span className="mr-2 text-lg">🐼</span>
+              Find similar
+            </>
+          )}
+        </Button>
+        <Button variant="outline" onClick={onReset}>
+          Upload New Image
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// --- Results Grid Component ---
+function ResultsGrid({ products, isLoadingMore, hasMoreResults }: {
+  products: EbayProduct[]
+  isLoadingMore: boolean
+  hasMoreResults: boolean
+}) {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">
+        Similar Products Found ({products.length} results)
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {products.map((product, index) => (
+          <Card key={`${product.id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="relative">
+              <AspectRatio ratio={1}>
+                <Image
+                  src={product.image || "/placeholder.svg"}
+                  alt={product.title}
+                  fill
+                  className="object-cover"
+                />
+              </AspectRatio>
+            </div>
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2 text-sm">{product.title}</h3>
+              <p className="text-lg font-bold text-green-600 mb-3">{product.price}</p>
+              <Button asChild className="w-full" size="sm">
+                <a href={product.url} target="_blank" rel="noopener noreferrer">
+                  View on eBay
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      {isLoadingMore && (
+        <div className="text-center mt-8">
+          <div className="inline-flex items-center gap-2 text-slate-600">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading more products...</span>
+          </div>
+        </div>
+      )}
+      {!hasMoreResults && products.length > 0 && (
+        <div className="text-center mt-8 py-4">
+          <p className="text-slate-500">You've reached the end of the results</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -31,7 +165,7 @@ export default function HomePage() {
   const [hasMoreResults, setHasMoreResults] = useState(true)
   const [page, setPage] = useState(1)
 
-  const handleImageSelect = (file: File) => {
+  const handleImageSelect = useCallback((file: File) => {
     if (!ALLOWED_TYPES.includes(file.type)) {
       setError("Only JPG, PNG, and WebP images are allowed.")
       return
@@ -52,30 +186,20 @@ export default function HomePage() {
       setImagePreview(e.target?.result as string)
     }
     reader.readAsDataURL(file)
-  }
+  }, [])
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      handleImageSelect(file)
-    }
-  }
+  const handleReset = useCallback(() => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    setSearchResults([])
+    setError(null)
+    setHasSearched(false)
+    setPage(1)
+    setHasMoreResults(true)
+  }, [])
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (file) {
-      handleImageSelect(file)
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
-
-  const loadResults = async (pageNum: number, isInitialSearch = false) => {
+  const loadResults = useCallback(async (pageNum: number, isInitialSearch = false) => {
     if (!selectedImage) return
-
     if (isInitialSearch) {
       setIsSearching(true)
       setError(null)
@@ -83,45 +207,35 @@ export default function HomePage() {
     } else {
       setIsLoadingMore(true)
     }
-
     try {
       const formData = new FormData()
       formData.append("image", selectedImage)
       formData.append("page", pageNum.toString())
-
       const response = await fetch("/api/search", {
         method: "POST",
         body: formData,
       })
-
-      if (!response.ok) {
-        throw new Error("Search failed")
-      }
-
+      if (!response.ok) throw new Error("Search failed")
       const data = await response.json()
-
       if (isInitialSearch) {
         setSearchResults(data.products || [])
       } else {
         setSearchResults((prev) => [...prev, ...(data.products || [])])
       }
-
       setHasMoreResults(data.hasMore !== false)
     } catch (err) {
       setError("Search failed. Please try again with another image.")
-      if (isInitialSearch) {
-        setSearchResults([])
-      }
+      if (isInitialSearch) setSearchResults([])
     } finally {
       setIsSearching(false)
       setIsLoadingMore(false)
     }
-  }
+  }, [selectedImage])
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     setPage(1)
     loadResults(1, true)
-  }
+  }, [loadResults])
 
   const loadMore = useCallback(() => {
     if (!isLoadingMore && hasMoreResults) {
@@ -129,19 +243,17 @@ export default function HomePage() {
       setPage(nextPage)
       loadResults(nextPage, false)
     }
-  }, [page, isLoadingMore, hasMoreResults, selectedImage])
+  }, [page, isLoadingMore, hasMoreResults, loadResults])
 
-  // Infinite scroll effect
   useEffect(() => {
     const handleScroll = () => {
       if (
         window.innerHeight + document.documentElement.scrollTop >=
-        document.documentElement.offsetHeight - 1000 // Load more when 1000px from bottom
+        document.documentElement.offsetHeight - 1000
       ) {
         loadMore()
       }
     }
-
     if (searchResults.length > 0 && hasMoreResults) {
       window.addEventListener("scroll", handleScroll)
       return () => window.removeEventListener("scroll", handleScroll)
@@ -170,66 +282,14 @@ export default function HomePage() {
           <Card>
             <CardContent className="p-6">
               {!imagePreview ? (
-                <div
-                  className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-slate-400 transition-colors cursor-pointer"
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onClick={() => document.getElementById("file-input")?.click()}
-                >
-                  <Upload className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Upload Product Image</h3>
-                  <p className="text-slate-600 mb-4">Drag and drop an image here, or click to select</p>
-                  <p className="text-sm text-slate-500">Supports JPG, PNG, and WebP formats</p>
-                  <input id="file-input" type="file" accept="image/*" onChange={handleFileInput} className="hidden" />
-                </div>
+                <UploadArea onFileSelect={handleImageSelect} error={error} />
               ) : (
-                <div className="space-y-4">
-                  <div className="relative max-w-md mx-auto">
-                    <AspectRatio ratio={1}>
-                      <Image
-                        src={imagePreview || "/placeholder.svg"}
-                        alt="Selected product"
-                        fill
-                        className="object-cover rounded-lg"
-                      />
-                    </AspectRatio>
-                  </div>
-                  <div className="flex gap-2 justify-center">
-                    <Button
-                      onClick={handleSearch}
-                      disabled={isSearching}
-                      size="lg"
-                      className="min-w-40 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-sm"
-                      variant="outline"
-                    >
-                      {isSearching ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Searching...
-                        </>
-                      ) : (
-                        <>
-                          <span className="mr-2 text-lg">🐼</span>
-                          Find similar
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedImage(null)
-                        setImagePreview(null)
-                        setSearchResults([])
-                        setError(null)
-                        setHasSearched(false)
-                        setPage(1)
-                        setHasMoreResults(true)
-                      }}
-                    >
-                      Upload New Image
-                    </Button>
-                  </div>
-                </div>
+                <ImagePreview
+                  imagePreview={imagePreview}
+                  onSearch={handleSearch}
+                  onReset={handleReset}
+                  isSearching={isSearching}
+                />
               )}
             </CardContent>
           </Card>
@@ -246,7 +306,7 @@ export default function HomePage() {
         )}
 
         {/* Error State */}
-        {error && (
+        {error && !isSearching && (
           <div className="max-w-2xl mx-auto mb-8">
             <Card className="border-red-200 bg-red-50">
               <CardContent className="p-6 text-center">
@@ -256,7 +316,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Results Section */}
+        {/* No Results State */}
         {hasSearched && !isSearching && searchResults.length === 0 && !error && (
           <div className="max-w-2xl mx-auto mb-8">
             <Card className="border-yellow-200 bg-yellow-50">
@@ -269,54 +329,13 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Results Section */}
         {searchResults.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">
-              Similar Products Found ({searchResults.length} results)
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {searchResults.map((product, index) => (
-                <Card key={`${product.id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="relative">
-                    <AspectRatio ratio={1}>
-                      <Image
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </AspectRatio>
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2 text-sm">{product.title}</h3>
-                    <p className="text-lg font-bold text-green-600 mb-3">{product.price}</p>
-                    <Button asChild className="w-full" size="sm">
-                      <a href={product.url} target="_blank" rel="noopener noreferrer">
-                        View on eBay
-                      </a>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Loading more indicator */}
-            {isLoadingMore && (
-              <div className="text-center mt-8">
-                <div className="inline-flex items-center gap-2 text-slate-600">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Loading more products...</span>
-                </div>
-              </div>
-            )}
-
-            {/* End of results indicator */}
-            {!hasMoreResults && searchResults.length > 0 && (
-              <div className="text-center mt-8 py-4">
-                <p className="text-slate-500">You've reached the end of the results</p>
-              </div>
-            )}
-          </div>
+          <ResultsGrid
+            products={searchResults}
+            isLoadingMore={isLoadingMore}
+            hasMoreResults={hasMoreResults}
+          />
         )}
       </div>
       {/* Affiliate Disclosure */}

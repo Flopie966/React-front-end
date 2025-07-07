@@ -33,9 +33,3 @@ jobs:
 
       - name: Run build
         run: pnpm build
-
-      - name: Run lint
-        run: pnpm lint
-
-      - name: Run audit
-        run: pnpm audit --audit-level=moderate

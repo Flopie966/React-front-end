@@ -148,7 +148,7 @@ function ResultsGrid({ products, isLoadingMore, hasMoreResults }: {
       )}
       {!hasMoreResults && products.length > 0 && (
         <div className="text-center mt-8 py-4">
-          <p className="text-slate-500">You've reached the end of the results</p>
+          <p className="text-slate-500">You&apos;ve reached the end of the results</p>
         </div>
       )}
     </div>
@@ -224,7 +224,7 @@ export default function HomePage() {
         setSearchResults((prev) => [...prev, ...(data.products || [])])
       }
       setHasMoreResults(data.hasMore !== false)
-    } catch (err) {
+    } catch {
       setError("Search failed. Please try again with another image.")
       if (isInitialSearch) setSearchResults([])
     } finally {

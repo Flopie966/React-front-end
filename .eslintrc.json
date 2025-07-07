@@ -8,7 +8,5 @@
   "parserOptions": {
     "project": "./tsconfig.json"
   },
-  "rules": {
-    // You can add custom rules here
-  }
+  "rules": {}
 } 

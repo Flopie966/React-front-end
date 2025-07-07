@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import Image from "next/image"
-import AnimatedTitle from '@/components/AnimatedTitle'
 
 interface EbayProduct {
   id: string
@@ -266,8 +265,6 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <section className="flex flex-col items-center justify-center text-center mb-12">
-          <AnimatedTitle />
-          <p className="mt-4 text-xl text-slate-700 font-medium">Just snap, search, and discover!</p>
           <h2 className="mt-4 text-3xl sm:text-4xl font-extrabold text-slate-900">Visual Product Search</h2>
           <p className="mt-2 text-lg text-slate-600 max-w-xl mx-auto">Upload an image to find similar products on eBay</p>
         </section>

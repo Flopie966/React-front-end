@@ -1,3 +1,4 @@
+import React from "react";
 import Link from "next/link";
 
 export default function AboutPage() {
@@ -5,7 +6,7 @@ export default function AboutPage() {
     <main className="max-w-2xl mx-auto py-16 px-4">
       <h1 className="text-4xl font-bold mb-6">About MoneyBear</h1>
       <p className="mb-4 text-lg">
-        We at <span className="font-semibold">MoneyBear</span> believe visual AI-driven search of your search of second-hand is the future. We want to make it freely available via cross-platform search.
+        We at <span className="font-semibold">MoneyBear</span> believe visual AI-driven search of your second-hand items is the future. We want to make it freely available via a cross-platform search tool. If you have any suggestions, please feel free to leave them in the forms below.
       </p>
       <p className="mb-4 text-lg">
         Use our tool: upload photos and see for yourself!

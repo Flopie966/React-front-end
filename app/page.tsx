@@ -326,6 +326,11 @@ export default function HomePage() {
         )}
       </div>
       {/* Affiliate Disclosure */}
+      <div className="w-full flex justify-center my-8">
+        <a href="/about" className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-lg font-semibold shadow">
+          About MoneyBear
+        </a>
+      </div>
       <footer className="w-full text-center py-4 text-xs text-slate-500 bg-transparent mt-8">
         As an eBay Partner, we may be compensated if you make a purchase through links on our site.
       </footer>

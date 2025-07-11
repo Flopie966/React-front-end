@@ -332,7 +332,7 @@ export default function HomePage() {
         </a>
       </div>
       <footer className="w-full text-center py-4 text-xs text-slate-500 bg-transparent mt-8">
-        As an eBay partner, we may be compensated if you make a purchase through links on our site.
+        As an EBAY partner, we may be compensated if you make a purchase through links on our site.
       </footer>
     </div>
   )

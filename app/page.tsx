@@ -17,7 +17,7 @@ interface EbayProduct {
   url: string
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
 // --- Upload Area Component ---
@@ -175,7 +175,7 @@ export default function HomePage() {
       return
     }
     if (file.size > MAX_FILE_SIZE) {
-      setError("Image must be less than 5MB.")
+      setError("Image must be 50MB or smaller.")
       return
     }
     setSelectedImage(file)

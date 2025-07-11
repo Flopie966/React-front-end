@@ -1,19 +1,29 @@
 import { NextResponse } from 'next/server';
 
+// Example: get dynamic pages (replace with real data fetching logic)
+async function getDynamicPages() {
+  // Example: return [{ slug: 'blog/first-post', lastmod: '2024-06-01' }];
+  return [];
+}
+
 export async function GET() {
-  // List of static routes
+  // List of static routes with lastmod (use build time as fallback)
+  const buildDate = new Date().toISOString().split('T')[0];
   const staticPages = [
-    '', // homepage
-    'about',
+    { slug: '', lastmod: buildDate }, // homepage
+    { slug: 'about', lastmod: buildDate },
+    { slug: 'contact', lastmod: buildDate },
+    { slug: 'privacy-policy', lastmod: buildDate },
+    { slug: 'terms', lastmod: buildDate },
+    // Add more static pages as needed
   ];
 
-  // If you have dynamic routes, add them here
-  // Example: const dynamicPages = await getDynamicPages();
-  const dynamicPages: string[] = [];
+  // Fetch dynamic pages
+  const dynamicPages = await getDynamicPages();
 
   const allPages = [...staticPages, ...dynamicPages];
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com';
+  const baseUrl = 'https://www.moneybear.nl';
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -21,7 +31,8 @@ export async function GET() {
     .map(
       (page) => `
     <url>
-      <loc>${baseUrl}/${page}</loc>
+      <loc>${baseUrl}${page.slug ? `/${page.slug}` : ''}</loc>
+      <lastmod>${page.lastmod}</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
     </url>`

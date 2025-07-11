@@ -110,18 +110,19 @@ function ResultsGrid({ products, isLoadingMore, hasMoreResults }: {
   return (
     <div>
       <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">
-        Similar Products Found ({products.length} results)
+        {products.length} result{products.length === 1 ? '' : 's'} found
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {products.map((product, index) => (
-          <Card key={`${product.id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow">
+          <Card key={`${product.id || product.url || index}-${index}`} className="overflow-hidden hover:shadow-xl transition-shadow border border-slate-200">
             <div className="relative">
               <AspectRatio ratio={1}>
                 <Image
                   src={product.image || "/placeholder.svg"}
-                  alt={product.title}
+                  alt={product.title || "Product image"}
                   fill
                   className="object-cover"
+                  onError={e => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
                 />
               </AspectRatio>
             </div>
@@ -164,6 +165,9 @@ export default function HomePage() {
   const [hasSearched, setHasSearched] = useState(false)
   const [hasMoreResults, setHasMoreResults] = useState(true)
   const [page, setPage] = useState(1)
+  const [caption, setCaption] = useState<string | null>(null)
+  const [captionEdit, setCaptionEdit] = useState<string>("")
+  const [isCaptionSubmitting, setIsCaptionSubmitting] = useState(false)
 
   const handleImageSelect = useCallback((file: File) => {
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -180,6 +184,8 @@ export default function HomePage() {
     setHasSearched(false)
     setPage(1)
     setHasMoreResults(true)
+    setCaption(null)
+    setCaptionEdit("")
 
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -196,6 +202,8 @@ export default function HomePage() {
     setHasSearched(false)
     setPage(1)
     setHasMoreResults(true)
+    setCaption(null)
+    setCaptionEdit("")
   }, [])
 
   const loadResults = useCallback(async (pageNum: number, isInitialSearch = false) => {
@@ -204,28 +212,36 @@ export default function HomePage() {
       setIsSearching(true)
       setError(null)
       setHasSearched(true)
+      setCaption(null)
+      setCaptionEdit("")
     } else {
       setIsLoadingMore(true)
     }
     try {
       const formData = new FormData()
-      formData.append("image", selectedImage)
-      formData.append("page", pageNum.toString())
+      formData.append("file", selectedImage)
+      // Externe API verwacht geen 'page', alleen 'file'
       const response = await fetch("/api/search", {
         method: "POST",
         body: formData,
       })
       if (!response.ok) throw new Error("Search failed")
       const data = await response.json()
+      setCaption(data.caption || null)
+      setCaptionEdit(data.caption || "")
+      // De resultaten zitten in data.results
       if (isInitialSearch) {
-        setSearchResults(data.products || [])
+        setSearchResults(data.results || [])
       } else {
-        setSearchResults((prev) => [...prev, ...(data.products || [])])
+        setSearchResults((prev) => [...prev, ...(data.results || [])])
       }
-      setHasMoreResults(data.hasMore !== false)
+      // Externe API geeft geen hasMore, dus na 1x zoeken is er geen 'meer'
+      setHasMoreResults(false)
     } catch {
       setError("Search failed. Please try again with another image.")
       if (isInitialSearch) setSearchResults([])
+      setCaption(null)
+      setCaptionEdit("")
     } finally {
       setIsSearching(false)
       setIsLoadingMore(false)
@@ -307,16 +323,50 @@ export default function HomePage() {
         {/* No Results State */}
         {hasSearched && !isSearching && searchResults.length === 0 && !error && (
           <div className="max-w-2xl mx-auto mb-8">
-            <Card className="border-yellow-200 bg-yellow-50">
-              <CardContent className="p-6 text-center">
-                <p className="text-yellow-800">
-                  No similar products found. Try uploading a different image with a clearer view of the product.
-                </p>
-              </CardContent>
-            </Card>
+            <p className="text-yellow-800 text-center">No similar products found.</p>
           </div>
         )}
-        {/* Results Section */}
+        {caption && (
+          <div className="max-w-2xl mx-auto mb-4 flex flex-col items-center">
+            <label htmlFor="caption-edit" className="mb-2 text-blue-800 font-medium">Caption (edit to improve description):</label>
+            <textarea
+              id="caption-edit"
+              className="w-full border border-blue-200 rounded p-2 mb-2 text-blue-900"
+              rows={2}
+              value={captionEdit}
+              onChange={e => setCaptionEdit(e.target.value)}
+              disabled={isCaptionSubmitting}
+            />
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition font-semibold disabled:opacity-50"
+              onClick={async () => {
+                if (!selectedImage || !captionEdit) return
+                setIsCaptionSubmitting(true)
+                try {
+                  const formData = new FormData()
+                  formData.append("file", selectedImage)
+                  formData.append("caption", captionEdit)
+                  const response = await fetch("/api/search", {
+                    method: "POST",
+                    body: formData,
+                  })
+                  if (!response.ok) throw new Error("Failed to update caption")
+                  const data = await response.json()
+                  setCaption(data.caption || captionEdit)
+                  setCaptionEdit(data.caption || captionEdit)
+                  setSearchResults(data.results || [])
+                } catch {
+                  // Optionally show error
+                } finally {
+                  setIsCaptionSubmitting(false)
+                }
+              }}
+              disabled={isCaptionSubmitting || !captionEdit || captionEdit === caption}
+            >
+              {isCaptionSubmitting ? "Updating..." : "Update Description & Search"}
+            </button>
+          </div>
+        )}
         {searchResults.length > 0 && (
           <ResultsGrid
             products={searchResults}
